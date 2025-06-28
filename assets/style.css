@@ -1,0 +1,208 @@
+:root {
+    --accent-color: #7764d8;
+    --accent-color-hover: #8a7ce0;
+    --accent-color-active: #baacff;
+    --background-color: #1a1a1a;
+    --text-color: #d0d0d0;
+    --text-color-dim: #888888;
+    --text-color-bright: #ffffff;
+    --panel-background-color: #303030;
+    --component-color: #404040;
+    --component-color-hover: #505050;
+    --component-color-active: #606060;
+    --panel-shadow: rgba(0, 0, 0, 0.2);
+    --debug-color: #7ac972;
+    --info-color: #5ec4ff;
+    --warning-color: #ffd666;
+    --error-color: #f06d59;
+}
+
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    background-color: var(--background-color);
+    color: var(--text-color);
+}
+
+body {
+    overflow: hidden;
+}
+
+.container {
+    display: flex;
+    flex-direction: row;
+    height: 100vh;
+    width: 100vw;
+}
+
+.side-panel {
+    min-width: 250px;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--panel-background-color);
+    overflow-y: scroll;
+    box-shadow: 0 0 15px var(--panel-shadow);
+}
+
+.central-container {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.main-panel {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: scroll;
+    padding: 0 30px 0 30px;
+}
+
+.input-panel {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+
+.input-wrapper {
+    display: flex;
+    flex-direction: row;
+    background-color: var(--panel-background-color);
+    box-shadow: 0 0 15px var(--panel-shadow);
+    border-radius: 30px;
+    width: 100%;
+    height: fit-content;
+    padding: 0;
+    margin: 0 15px 15px 15px;
+}
+
+.input-field {
+    width: calc(100% - 80px);
+    height: 35px;
+    background-color: inherit;
+    border-radius: 35px;
+    color: var(--text-color-bright);
+    border: none;
+    padding: 10px 10px 10px 20px;
+    margin: 0;
+    font-size: 18px;
+}
+
+.input-field:focus {
+    outline: none;
+}
+
+.input-button {
+    width: 45px;
+    height: 45px;
+    margin: 5px 5px 5px 0;
+    border-radius: 50%;
+    border-style: none;
+    background-color: var(--accent-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.input-button:hover {
+    background-color: var(--accent-color-hover);
+}
+
+.input-button:active {
+    background-color: var(--accent-color-active);
+}
+
+.log-entry {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+}
+
+.log-content {
+    display: flex;
+    flex-direction: row;
+    align-content: flex-start;
+}
+
+.log-timestamp {
+    font-size: 12px;
+    color: var(--text-color-dim);
+    align-self: flex-end;
+}
+
+.log-level {
+    font-weight: bold;
+    align-self: flex-start;
+    margin-right: 10px;
+    padding: 2px 5px;
+    border-radius: 5px;
+    font-size: 12px;
+    color: var(--background-color);
+}
+
+.log-message {
+    overflow-wrap: anywhere;
+}
+
+.log-level.debug {
+    background-color: var(--debug-color);
+}
+
+.log-level.info {
+    background-color: var(--info-color);
+}
+
+.log-level.warning {
+    background-color: var(--warning-color);
+}
+
+.log-level.error {
+    background-color: var(--error-color);
+}
+
+.side-panel-item {
+    background-color: var(--component-color);
+    padding: 15px;
+    margin: 5px 10px 5px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.side-panel-item:hover {
+    background-color: var(--component-color-hover);
+}
+
+.side-panel-item:active {
+    background-color: var(--component-color-active);
+}
+
+.side-panel-item .disconnect-button {
+    margin-left: auto;
+    width: 30px;
+    height: 30px;
+    background-color: var(--accent-color);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.side-panel-item .disconnect-button:hover {
+    background-color: var(--accent-color-hover);
+}
+
+.side-panel-item .disconnect-button:active {
+    background-color: var(--accent-color-active);
+}
+
+.side-panel-item:active:has(.disconnect-button:active) {
+    background-color: var(--component-color-hover);
+}
