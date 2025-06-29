@@ -1,9 +1,15 @@
+use std::net::SocketAddr;
+
 use dioxus::prelude::*;
 
 use crate::{app::log::Log, connection::connection_manager::ConnectionManager};
 
 #[component]
-pub fn side_panel_contents(connection_manager: SyncSignal<ConnectionManager>, log: SyncSignal<Log>) -> Element {
+pub fn side_panel_contents(
+    connection_manager: SyncSignal<ConnectionManager>, 
+    log: SyncSignal<Log>, 
+    active_chat: Signal<Option<(String, SocketAddr)>>,
+) -> Element {
     static X_SVG: Asset = asset!("/assets/x.svg");
     let mut connections_copy = Vec::new();
     if let Ok(connection_manager) = connection_manager.try_read() {
@@ -17,19 +23,29 @@ pub fn side_panel_contents(connection_manager: SyncSignal<ConnectionManager>, lo
     }
     rsx!{
         div {
-            class: "side-panel-item",
+            class: "side-panel-item ".to_owned() + if active_chat().is_none() {"active"} else { "" },
             onclick: move |_| {
-                log.write().log_d("Clicked on System");
+                active_chat.set(None);
             },
             "System"
         }
         for connection in connections_copy.drain(..) {
             div {
-                class: "side-panel-item",
+                class: "side-panel-item ".to_owned() + if let Some((_, addr)) = active_chat() { if addr == connection.1 { "active" } else { "" } } else { "" },
                 onclick: move |_| {
-                    log.write().log_d(format!("Clicked on connection: {}", connection.0));
+                    active_chat.set(Some((connection.0.clone(), connection.1.clone())));
                 },
-                "{connection.0}"
+                div {
+                    class: "side-panel-item-wrapper",
+                    span {
+                        class: "connection-name",
+                        "{connection.0}"
+                    }
+                    span {
+                        class: "connection-address",
+                        "{connection.1}"
+                    }
+                }
                 button {
                     class: "disconnect-button",
                     onclick: move |e| {

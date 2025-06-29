@@ -2,17 +2,24 @@ use std::{net::{Ipv6Addr, SocketAddr, SocketAddrV6, TcpListener, TcpStream}, syn
 
 use dioxus::signals::{SyncSignal, Writable};
 
-use crate::{app::log::Log, connection::connection_map::ConnectionMap};
+use crate::{app::log::Log, connection::{chats::Chats, connection_map::ConnectionMap}};
 
 pub struct ConnectionManager {
     pub connections: SyncSignal<ConnectionMap>,
+    username: SyncSignal<String>,
     log: SyncSignal<Log>,
+    chats: SyncSignal<Chats>,
     running: Arc<AtomicBool>,
     thread: Option<JoinHandle<()>>,
 }
 
 impl ConnectionManager {
-    pub fn new(log: SyncSignal<Log>, connection_map: SyncSignal<ConnectionMap>) -> Self {
+    pub fn new(
+        log: SyncSignal<Log>, 
+        connection_map: SyncSignal<ConnectionMap>, 
+        chats: SyncSignal<Chats>,
+        username: SyncSignal<String>,
+    ) -> Self {
         let connections = connection_map;
         let running = Arc::new(AtomicBool::new(true));
         let listener = TcpListener::bind(
@@ -23,25 +30,38 @@ impl ConnectionManager {
             let running = running.clone();
             let connections = connections.clone();
             let log = log.clone();
-            move || Self::run(running, listener, log, connections)
+            let chats = chats.clone();
+            let username = username.clone();
+            move || Self::run(running, listener, log, connections, chats, username)
         }));
         ConnectionManager {
             connections,
+            username,
             log,
+            chats,
             running,
             thread,
         }
     }
-    fn run(running: Arc<AtomicBool>, listener: TcpListener, mut log: SyncSignal<Log>, mut connections: SyncSignal<ConnectionMap>) {
+    fn run(
+        running: Arc<AtomicBool>, 
+        listener: TcpListener, 
+        mut log: SyncSignal<Log>, 
+        mut connections: SyncSignal<ConnectionMap>, 
+        chats: SyncSignal<Chats>,
+        username: SyncSignal<String>,
+    ) {
         while running.load(std::sync::atomic::Ordering::SeqCst) {
             match listener.accept() {
                 Ok((socket, address)) => {
-                    log.write().log_d(format!("Accepted connection from {}", address));
+                    log.write().log_i(format!("Accepted connection from {}", address));
                     let connection = crate::connection::connection::Connection::new(
                         address,
                         socket,
                         log.clone(),
                         connections.clone(),
+                        chats.clone(),
+                        username.clone(),
                     );
                     connections.write().add(connection);
                 },
@@ -76,6 +96,8 @@ impl ConnectionManager {
             socket,
             self.log.clone(),
             self.connections.clone(),
+            self.chats.clone(),
+            self.username.clone(),
         );
         self.connections.write().add(connection);
         Ok(())

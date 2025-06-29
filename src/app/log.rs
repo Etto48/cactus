@@ -71,16 +71,35 @@ impl Default for Log {
 }
 
 impl Log {
+    fn log_to_term(level: LogLevel, message: impl Into<String>) {
+        let entry = LogEntry::new(level, message);
+        let color = match level {
+            LogLevel::Debug => "32", // Blue
+            LogLevel::Info => "34", // Green
+            LogLevel::Warning => "33", // Yellow
+            LogLevel::Error => "31", // Red
+        };
+        println!("\x1b[90m{}\x1b[0m \x1b[{}m[{}]\x1b[0m {}", entry.fmt_timestamp(), color, entry.level.to_string(), entry.message);
+    }
+
     pub fn log_d(&mut self, message: impl Into<String>) {
+        let message = message.into();
+        Self::log_to_term(LogLevel::Debug, message.clone());
         self.entries.push(LogEntry::new_d(message));
     }
     pub fn log_i(&mut self, message: impl Into<String>) {
+        let message = message.into();
+        Self::log_to_term(LogLevel::Info, message.clone());
         self.entries.push(LogEntry::new_i(message));
     }
     pub fn log_w(&mut self, message: impl Into<String>) {
+        let message = message.into();
+        Self::log_to_term(LogLevel::Warning, message.clone());
         self.entries.push(LogEntry::new_w(message));
     }
     pub fn log_e(&mut self, message: impl Into<String>) {
+        let message = message.into();
+        Self::log_to_term(LogLevel::Error, message.clone());
         self.entries.push(LogEntry::new_e(message));
     }
     pub fn iter(&self) -> impl Iterator<Item = &LogEntry> {
@@ -96,9 +115,14 @@ impl Log {
 
 
 #[component]
-pub fn log_to_component(log: SyncSignal<Log>, last_log_message: Signal<Option<Event<MountedData>>>) -> Element {
+pub fn log_to_component(
+    log: SyncSignal<Log>,
+    mut last_log_message: Signal<Option<Event<MountedData>>>
+) -> Element {
+    let log = log.read();
+    let log_len = log.len();
     rsx!{
-        for (i, entry) in log.read().iter().enumerate() {
+        for (i, entry) in log.iter().enumerate() {
             div {
                 class: "log-entry",
                 div {
@@ -111,7 +135,7 @@ pub fn log_to_component(log: SyncSignal<Log>, last_log_message: Signal<Option<Ev
                             LogLevel::Error => "log-level error",
                         },
                         onmounted: move |e| {
-                            if i == log.read().len() - 1 {
+                            if i == log_len - 1 {
                                 last_log_message.set(Some(e));
                             }
                         },

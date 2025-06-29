@@ -1,53 +1,134 @@
+use std::net::SocketAddr;
+
 use dioxus::desktop::LogicalSize;
 pub use dioxus::prelude::*;
 
-use crate::{app::{log::{log_to_component, Log}, side_panel::side_panel_contents}, commands::commands::parse_command, connection::{connection_manager::ConnectionManager, connection_map::ConnectionMap}};
+use crate::{app::{chat::chat_to_component, log::{log_to_component, Log}, settings::settings_component, side_panel::side_panel_contents}, commands::commands::parse_command, connection::{chats::Chats, connection_manager::ConnectionManager, connection_map::ConnectionMap, message::Message}};
 
 pub fn app() -> Element {
     dioxus::desktop::window().set_title("🌵Cactus");
     dioxus::desktop::window().set_min_inner_size(Some(LogicalSize::new(600.0, 400.0)));
     static CSS: Asset = asset!("/assets/style.css");
     static ENTER_SVG: Asset = asset!("/assets/arrow-return-left.svg");
-    let log = use_signal_sync(|| {
+    static GEAR_SVG: Asset = asset!("/assets/gear-fill.svg");
+    let mut log = use_signal_sync(|| {
         let mut log = Log::default();
         log.log_i("Cactus started");
         log
     });
-    let connection_map = use_signal_sync(|| {
+    let chats = use_signal_sync(|| {
+        Chats::default()
+    });
+    let mut show_settings = use_signal(|| {
+        false
+    });
+    let username = use_signal_sync(|| {
+        String::new()
+    });
+    let mut connection_map = use_signal_sync(|| {
         ConnectionMap::default()
     });
     let connection_manager = use_signal_sync(|| {
-        ConnectionManager::new(log, connection_map)
+        ConnectionManager::new(log, connection_map, chats, username)
+    });
+    let active_chat = use_signal(|| {
+        None::<(String, SocketAddr)>
     });
     let mut input_string = use_signal_sync(|| String::new());
+    let last_log_message = use_signal(|| None::<Event<MountedData>>);
+    let last_message = use_signal(|| None::<Event<MountedData>>);
     let mut enter_handler = move || {
         if let Ok(mut input_string) = input_string.try_write() {
             if input_string.is_empty() {
                 return;
             }
-            parse_command(input_string.clone(), connection_manager, log);
+            if let Some((name, address)) = active_chat() {
+                let message = Message::text(
+                    input_string.clone()
+                );
+                if let Some(connection) = connection_map.write().get_mut_by_address(&address) {
+                    if let Err(e) = connection.send(message) {
+                        log.write().log_e(format!("Failed to send message to {}: {}", name, e));
+                    }
+                }
+            } else {
+                parse_command(input_string.clone(), connection_manager, log);
+            }
             input_string.clear();
         }
     };
-    let last_log_message = use_signal(|| None::<Event<MountedData>>);
     use_effect(move || {
-        if let Some(message) = last_log_message() {
-            let _ = message.scroll_to(ScrollBehavior::Smooth);
+        if active_chat().is_some() {
+            if let Some(last_message) = last_message() {
+                let _ = last_message.scroll_to(ScrollBehavior::Smooth);
+            }
+        } else {
+            if let Some(last_log_message) = last_log_message() {
+                let _ = last_log_message.scroll_to(ScrollBehavior::Smooth);
+            }
         }
     });
     rsx!{
         document::Stylesheet{ href: CSS }
         div {
             class: "container",
+            if show_settings() {
+                settings_component { username, log, show_settings }
+            }
             div {
                 class: "side-panel",
-                side_panel_contents { connection_manager, log }
+                div {
+                    class: "side-panel-wrapper",
+                    side_panel_contents { connection_manager, log, active_chat }
+                }
+                div {
+                    class: "side-panel-footer",
+                    div {
+                        class: "side-panel-footer-wrapper",
+                        span {
+                            class: "username",
+                            if username().is_empty() {
+                                "Anonymous"
+                            } else {
+                                "{username}"
+                            }
+                        }
+                    }
+                    
+                    button {
+                        class: "settings-button",
+                        onclick: move |_| {
+                            show_settings.set(!show_settings());
+                        },
+                        img {
+                            src: GEAR_SVG,
+                            alt: "Settings",
+                        }
+                    }
+                }
             }
             div {
                 class: "central-container",
+                if let Some((name, address)) = active_chat() {
+                    div {
+                        class: "main-panel-header",
+                        span {
+                            class: "main-panel-header-name",
+                            "{name}"
+                        }
+                        span {
+                            class: "main-panel-header-address",
+                            "{address}"
+                        }
+                    }
+                }
                 div {
                     class: "main-panel",
-                    log_to_component { log, last_log_message }
+                    if let Some(active_chat) = active_chat() {
+                        chat_to_component { connection_manager, active_chat, chats, last_message }
+                    } else {
+                        log_to_component { log, last_log_message }
+                    }
                 }
                 div {
                     class: "input-panel",
@@ -55,7 +136,7 @@ pub fn app() -> Element {
                         class: "input-wrapper",
                         input {
                             class: "input-field",
-                            placeholder: "Type here...",
+                            placeholder: if active_chat().is_none() { "Type a command..." } else { "Type a message..." },
                             value: "{input_string}",
                             oninput: move |e| {
                                 input_string.set(e.value().clone());

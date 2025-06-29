@@ -1,4 +1,5 @@
 :root {
+    --accent-color-dim: #41396a;
     --accent-color: #7764d8;
     --accent-color-hover: #8a7ce0;
     --accent-color-active: #baacff;
@@ -7,9 +8,12 @@
     --text-color-dim: #888888;
     --text-color-bright: #ffffff;
     --panel-background-color: #303030;
+    --panel-background-color-dim: #2a2a2a;
     --component-color: #404040;
     --component-color-hover: #505050;
     --component-color-active: #606060;
+    --relative-hover: #ffffff30;
+    --relative-active: #ffffff50;
     --panel-shadow: rgba(0, 0, 0, 0.2);
     --debug-color: #7ac972;
     --info-color: #5ec4ff;
@@ -38,12 +42,70 @@ body {
 }
 
 .side-panel {
-    min-width: 250px;
     display: flex;
     flex-direction: column;
+    height: 100%;
     background-color: var(--panel-background-color);
-    overflow-y: scroll;
     box-shadow: 0 0 15px var(--panel-shadow);
+}
+
+.side-panel-footer {
+    height: 70px;
+    background-color: var(--component-color);
+    border-radius: 10px;
+    margin: 0 5px 5px 5px;
+    padding: 5px 15px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.side-panel-footer-wrapper {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.side-panel-footer-wrapper .username {
+    font-weight: bold;
+    font-size: 16px;
+    color: var(--text-color-bright);
+}
+
+.side-panel-footer-wrapper .address {
+    font-size: 14px;
+    color: var(--text-color-dim);
+}
+
+.settings-button {
+    border: none;
+    background-color: inherit;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.settings-button:hover {
+    background-color: var(--relative-hover);
+}
+
+.settings-button img {
+    width: 20px;
+    height: 20px;
+    filter: invert(1);
+}
+
+.side-panel-wrapper {
+    min-width: 250px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow-y: scroll;
 }
 
 .central-container {
@@ -57,7 +119,28 @@ body {
     display: flex;
     flex-direction: column;
     overflow-y: scroll;
-    padding: 0 30px 0 30px;
+    padding: 0 40px 0 40px;
+}
+
+.main-panel-header {
+    background-color: var(--panel-background-color-dim);
+    box-shadow: 0 0 15px var(--panel-shadow);
+    padding: 10px 20px;
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+.main-panel-header-name {
+    font-weight: bold;
+    font-size: 20px;
+    color: var(--text-color-bright);
+}
+
+.main-panel-header-address {
+    font-size: 14px;
+    color: var(--text-color-dim);
 }
 
 .input-panel {
@@ -118,7 +201,7 @@ body {
 .log-entry {
     display: flex;
     flex-direction: column;
-    padding: 10px;
+    padding: 10px 0 10px 0;
 }
 
 .log-content {
@@ -166,7 +249,7 @@ body {
 .side-panel-item {
     background-color: var(--component-color);
     padding: 15px;
-    margin: 5px 10px 5px 10px;
+    margin: 5px 15px 5px 15px;
     border-radius: 10px;
     cursor: pointer;
     display: flex;
@@ -174,19 +257,21 @@ body {
     align-items: center;
 }
 
-.side-panel-item:hover {
+.side-panel-item:hover:not(.active) {
     background-color: var(--component-color-hover);
 }
 
-.side-panel-item:active {
+.side-panel-item:active,
+.side-panel-item.active {
     background-color: var(--component-color-active);
+    color: var(--text-color-bright);
 }
 
 .side-panel-item .disconnect-button {
     margin-left: auto;
-    width: 30px;
-    height: 30px;
-    background-color: var(--accent-color);
+    width: 20px;
+    height: 20px;
+    background-color: inherit;
     border: none;
     border-radius: 50%;
     cursor: pointer;
@@ -195,14 +280,172 @@ body {
     justify-content: center;
 }
 
+.side-panel-item .disconnect-button img {
+    filter: invert(1);
+    width: 20px;
+    height: 20px;
+}
+
 .side-panel-item .disconnect-button:hover {
-    background-color: var(--accent-color-hover);
+    background-color: var(--relative-hover);
 }
 
 .side-panel-item .disconnect-button:active {
-    background-color: var(--accent-color-active);
+    background-color: var(--relative-active);
 }
 
 .side-panel-item:active:has(.disconnect-button:active) {
     background-color: var(--component-color-hover);
+    color: var(--text-color);
+}
+
+.side-panel-item-wrapper {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.side-panel-item .connection-name {
+    font-weight: bold;
+    font-size: 16px;
+    color: var(--text-color-bright);
+}
+
+.side-panel-item .connection-address {
+    font-size: 14px;
+    color: var(--text-color-dim);
+}
+
+.chat-message {
+    display: flex;
+    flex-direction: column;
+    border-radius: 20px;
+    padding: 10px;
+    margin: 5px 0;
+    width: fit-content;
+}
+
+.chat-message:last-child {
+    margin-bottom: 10px;
+}
+
+.chat-message.received {
+    align-self: flex-start;
+    background-color: var(--component-color);
+    border-top-left-radius: 0;
+}
+
+.chat-message.sent {
+    align-self: flex-end;
+    background-color: var(--accent-color-dim);
+    color: var(--text-color-bright);
+    border-bottom-right-radius: 0;
+}
+
+.chat-message-wrapper {
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-message-source {
+    font-size: 12px;
+}
+
+.chat-message-content {
+    font-size: 16px;
+    overflow-wrap: anywhere;
+    margin: 0 5px;
+}
+
+.chat-message.received .chat-message-source {
+    color: var(--accent-color-active);
+    align-self: flex-start;
+}
+
+.chat-message-timestamp {
+    margin-left: 20px;
+    font-size: 10px;
+    align-self: flex-end;
+}
+
+.chat-message.received .chat-message-timestamp {
+    color: var(--text-color-dim);
+}
+
+.chat-message.sent .chat-message-timestamp {
+    color: var(--text-color);
+}
+
+.settings-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(5px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.settings {
+    display: flex;
+    flex-direction: column;
+    background-color: var(--panel-background-color);
+    box-shadow: 0 0 30px var(--panel-shadow);
+    border-radius: 20px;
+    padding: 20px;
+}
+
+.settings .settings-header {
+    font-size: 24px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    font-weight: bold;
+    color: var(--text-color-bright);
+    margin-bottom: 20px;
+}
+
+.settings .close-button {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    background-color: inherit;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.settings .close-button:hover {
+    background-color: var(--relative-hover);
+}
+
+.settings .close-button img {
+    width: 30px;
+    height: 30px;
+    filter: invert(1);
+}
+
+.settings label {
+    display: block;
+    font-size: 16px;
+    color: var(--text-color-bright);
+    margin-bottom: 10px;
+}
+
+.settings input {
+    width: 100%;
+    padding: 10px;
+    border-radius: 10px;
+    box-sizing: border-box;
+    border: none;
+    background-color: var(--component-color);
+    color: var(--text-color-bright);
+    margin-bottom: 20px;
 }

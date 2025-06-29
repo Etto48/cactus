@@ -1,8 +1,8 @@
 use std::{io::{Read, Write}, net::{SocketAddr, TcpStream}, sync::{atomic::AtomicBool, Arc, Mutex}, thread::{self, JoinHandle}, time::Duration};
 
-use dioxus::signals::{SyncSignal, Writable};
+use dioxus::signals::{Readable, SyncSignal, Writable};
 
-use crate::{app::log::Log, connection::{connection_map::ConnectionMap, message::Message}};
+use crate::{app::log::Log, connection::{chats::{Chats, MessageDirection}, connection_map::ConnectionMap, message::Message}};
 
 pub struct Connection {
     pub name: Arc<Mutex<Option<String>>>,
@@ -11,28 +11,49 @@ pub struct Connection {
     pub running: Arc<AtomicBool>,
     pub thread: Option<JoinHandle<()>>,
     pub log: SyncSignal<Log>,
+    pub chats: SyncSignal<Chats>,
 }
 
 impl Connection {
-    pub fn new(address: SocketAddr, socket: TcpStream, log: SyncSignal<Log>, connection_map: SyncSignal<ConnectionMap>) -> Self {
+    pub fn new(
+        address: SocketAddr, 
+        socket: TcpStream, 
+        mut log: SyncSignal<Log>, 
+        connection_map: SyncSignal<ConnectionMap>, 
+        chats: SyncSignal<Chats>,
+        username: SyncSignal<String>,
+    ) -> Self {
         let running = Arc::new(AtomicBool::new(true));
         let name = Arc::new(Mutex::new(None));
         socket.set_nonblocking(true).expect("Failed to set socket to non-blocking");
+            
         let thread = Some(std::thread::spawn({
             let running = running.clone();
             let socket = socket.try_clone().expect("Failed to clone socket");
             let name = name.clone();
-            move || Self::run(running, socket,address,  name, log.clone(), connection_map)
+            move || Self::run(running, socket,address,  name, log.clone(), connection_map, chats.clone())
         }));
         
-        Connection {
+        let mut ret = Connection {
             name,
             address,
             socket,
             running,
             thread,
             log,
+            chats,
+        };
+
+        {
+            let username = username.read();
+            if !username.is_empty() {
+                if let Err(e) = ret.send(Message::Hello(username.clone())) {
+                    log.write().log_e(format!("Failed to send hello message to {}: {:?}", address, e));
+                }       
+            }
         }
+
+        ret
     }
 
     fn run(
@@ -41,7 +62,8 @@ impl Connection {
         address: SocketAddr, 
         name: Arc<Mutex<Option<String>>>, 
         mut log: SyncSignal<Log>, 
-        mut connection_map: SyncSignal<ConnectionMap>
+        mut connection_map: SyncSignal<ConnectionMap>,
+        mut chats: SyncSignal<Chats>,
     ) {
         let mut receive_buffer = [0; 1024*4];
         let mut expected_len = None;
@@ -62,15 +84,17 @@ impl Connection {
                             if let Some(msg) = message {
                                 match msg {
                                     Message::Hello(n) => {
-                                        connection_map.write().rename_connection(address, n.clone());
-                                        log.write().log_d(format!("{} is now called {}", 
-                                            address, 
-                                            name.lock().unwrap().as_ref().unwrap()));
+                                        if !n.is_empty() {
+                                            connection_map.write().rename_connection(address, n.clone());
+                                            log.write().log_d(format!("{} is now called {}", 
+                                                address, 
+                                                n));
+                                        }
                                     },
                                     Message::Text(text) => {
                                         log.write().log_d(format!("Received text message from {}: {}", 
                                             name.lock().unwrap().as_ref().unwrap_or(&format!("{}", address)), text));
-                                        
+                                        chats.write().add_message(address, MessageDirection::Received, text.clone());
                                     }
                                 }
                             }
@@ -104,6 +128,9 @@ impl Connection {
     }
 
     pub fn send(&mut self, message: Message) -> std::io::Result<()> {
+        if let Message::Text(text) = &message {
+            self.chats.write().add_message(self.address, MessageDirection::Sent, text.clone());
+        }
         let serialized = message.serialize();
         self.socket.write_all(&serialized)?;
         Ok(())
@@ -115,6 +142,9 @@ impl Drop for Connection {
         self.running.store(false, std::sync::atomic::Ordering::SeqCst);
         let name = self.get_name();
         let mut log = self.log.try_write().ok();
+        if let Ok(mut chats) = self.chats.try_write() {
+            chats.clear_chat(&self.address)
+        }
         if let Err(e) = self.socket.shutdown(std::net::Shutdown::Both) {
             if let Some(log) = &mut log {
                 log.log_e(format!("Failed to shutdown socket {}: {:?}", self.address, e));
@@ -128,6 +158,5 @@ impl Drop for Connection {
         if let Some(log) = &mut log {
             log.log_d(format!("Connection to {} closed", name));
         }
-        
     }
 }
