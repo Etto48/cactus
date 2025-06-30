@@ -21,7 +21,6 @@ pub fn chat_to_component(
                     onmounted: move |e| {
                         if i == messages_len - 1 {
                             last_message.set(Some(e));
-                            println!("Last message set");
                         }
                     },
                     div {
