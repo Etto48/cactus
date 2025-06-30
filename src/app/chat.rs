@@ -1,45 +1,33 @@
-use std::net::SocketAddr;
+use std::{collections::HashMap, net::SocketAddr};
 
 use dioxus::prelude::*;
 
-use crate::connection::{chats::Chats, connection_manager::ConnectionManager};
+use crate::connection::{chats::{ChatMessage, Chats}, connection_manager::ConnectionManager};
 
 #[component]
 pub fn chat_to_component(
     connection_manager: SyncSignal<ConnectionManager>, 
     active_chat: ReadOnlySignal<(String, SocketAddr)>,
     chats: SyncSignal<Chats>, 
-    mut message_refs: Signal<Vec<Event<MountedData>>>,
-    mut last_message_index: Signal<Option<usize>>,
+    mut last_message_ref: Signal<Option<Event<MountedData>>>,
+    mut message_refs: Signal<HashMap<usize, Event<MountedData>>>,
 ) -> Element {
     let (name, address) = active_chat();
     if let Some(messages) = chats.read().get_messages(&address) {
         let messages_len = messages.len();
         use_effect(move || {
             active_chat.read();
-            last_message_index.set(Some(messages_len - 1));
+            if messages_len > 0 {
+                if let Some(last_message) = message_refs.read().get(&(messages_len - 1)) {
+                    last_message_ref.set(Some(last_message.clone()));
+                }
+            }
         });
         rsx! {
-            for message in messages.iter() {
+            for (i, message) in messages.iter().enumerate() {
                 div {
                     class: "chat-message ".to_owned() + message.direction.to_str(),
-                    div {
-                        class: "chat-message-wrapper",
-                        onmounted: move |e| {
-                            message_refs.write().push(e);
-                            last_message_index.set(Some(messages_len - 1));
-                        },
-                        if message.direction.is_received() {
-                            span {
-                                class: "chat-message-source",
-                                "{name}"
-                            }
-                        }
-                        span {
-                            class: "chat-message-content",
-                            "{message.content}"    
-                        }
-                    }
+                    chat_message_component { message_refs, message: message.clone(), name: name.clone(), i }
                     span {
                         class: "chat-message-timestamp",
                         "{message.fmt_timestamp()}"
@@ -48,4 +36,31 @@ pub fn chat_to_component(
             }
         }
     } else { rsx! { } }
+}
+
+#[component]
+fn chat_message_component(
+    mut message_refs: Signal<HashMap<usize, Event<MountedData>>>,
+    message: ReadOnlySignal<ChatMessage>,
+    name: ReadOnlySignal<String>,
+    i: ReadOnlySignal<usize>
+) -> Element {
+    rsx! {
+        div {
+            class: "chat-message-wrapper",
+            onmounted: move |e| {
+                message_refs.write().insert(i(), e);
+            },
+            if message().direction.is_received() {
+                span {
+                    class: "chat-message-source",
+                    "{name}"
+                }
+            }
+            span {
+                class: "chat-message-content",
+                "{message().content}"    
+            }
+        }
+    }
 }
