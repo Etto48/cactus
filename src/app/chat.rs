@@ -9,22 +9,26 @@ pub fn chat_to_component(
     connection_manager: SyncSignal<ConnectionManager>, 
     active_chat: ReadOnlySignal<(String, SocketAddr)>,
     chats: SyncSignal<Chats>, 
-    mut last_message: Signal<Option<Event<MountedData>>>,
+    mut message_refs: Signal<Vec<Event<MountedData>>>,
+    mut last_message_index: Signal<Option<usize>>,
 ) -> Element {
     let (name, address) = active_chat();
     if let Some(messages) = chats.read().get_messages(&address) {
         let messages_len = messages.len();
+        use_effect(move || {
+            active_chat.read();
+            last_message_index.set(Some(messages_len - 1));
+        });
         rsx! {
-            for (i, message) in messages.iter().enumerate() {
+            for message in messages.iter() {
                 div {
-                    class: "chat-message {message.direction.to_str()}",
-                    onmounted: move |e| {
-                        if i == messages_len - 1 {
-                            last_message.set(Some(e));
-                        }
-                    },
+                    class: "chat-message ".to_owned() + message.direction.to_str(),
                     div {
                         class: "chat-message-wrapper",
+                        onmounted: move |e| {
+                            message_refs.write().push(e);
+                            last_message_index.set(Some(messages_len - 1));
+                        },
                         if message.direction.is_received() {
                             span {
                                 class: "chat-message-source",

@@ -36,7 +36,8 @@ pub fn app() -> Element {
     });
     let mut input_string = use_signal_sync(|| String::new());
     let last_log_message = use_signal(|| None::<Event<MountedData>>);
-    let last_message = use_signal(|| None::<Event<MountedData>>);
+    let message_refs = use_signal(|| Vec::<Event<MountedData>>::new());
+    let last_message_index = use_signal(|| None::<usize>);
     let mut enter_handler = move || {
         if let Ok(mut input_string) = input_string.try_write() {
             if input_string.is_empty() {
@@ -59,8 +60,8 @@ pub fn app() -> Element {
     };
     use_effect(move || {
         if active_chat().is_some() {
-            if let Some(last_message) = last_message() {
-                let _ = last_message.scroll_to(ScrollBehavior::Smooth);
+            if let Some(last_message_index) = last_message_index() {
+                let _ = message_refs.read()[last_message_index].scroll_to(ScrollBehavior::Smooth);
             }
         } else {
             if let Some(last_log_message) = last_log_message() {
@@ -125,7 +126,7 @@ pub fn app() -> Element {
                 div {
                     class: "main-panel",
                     if let Some(active_chat) = active_chat() {
-                        chat_to_component { connection_manager, active_chat, chats, last_message }
+                        chat_to_component { connection_manager, active_chat, chats, message_refs, last_message_index }
                     } else {
                         log_to_component { log, last_log_message }
                     }
