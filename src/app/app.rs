@@ -25,14 +25,14 @@ pub fn app() -> Element {
     let username = use_signal_sync(|| {
         String::new()
     });
+    let active_chat = use_signal_sync(|| {
+        None::<(String, SocketAddr)>
+    });
     let mut connection_map = use_signal_sync(|| {
-        ConnectionMap::default()
+        ConnectionMap::new(active_chat)
     });
     let connection_manager = use_signal_sync(|| {
         ConnectionManager::new(log, connection_map, chats, username)
-    });
-    let active_chat = use_signal(|| {
-        None::<(String, SocketAddr)>
     });
     let mut input_string = use_signal_sync(|| String::new());
     let last_log_message = use_signal(|| None::<Event<MountedData>>);

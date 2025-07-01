@@ -1,22 +1,24 @@
 use std::{collections::HashMap, net::SocketAddr};
 
+use dioxus::signals::{SyncSignal, Writable};
+
 use crate::connection::connection::Connection;
 
 pub struct ConnectionMap {
     connections: HashMap<SocketAddr, Connection>,
     name_to_address: HashMap<String, SocketAddr>,
-}
-
-impl Default for ConnectionMap {
-    fn default() -> Self {
-        ConnectionMap {
-            connections: HashMap::new(),
-            name_to_address: HashMap::new(),
-        }
-    }
+    active_chat: SyncSignal<Option<(String, SocketAddr)>>,
 }
 
 impl ConnectionMap {
+    pub fn new(active_chat: SyncSignal<Option<(String, SocketAddr)>>) -> Self {
+        ConnectionMap {
+            connections: HashMap::new(),
+            name_to_address: HashMap::new(),
+            active_chat,
+        }
+    }
+
     pub fn add(&mut self, connection: Connection) {
         let address = connection.address;
         let name = connection.name.lock().unwrap().clone();
@@ -29,6 +31,10 @@ impl ConnectionMap {
         if let Some(connection) = self.connections.remove(address) {
             if let Some(name) = connection.name.lock().unwrap().as_ref() {
                 self.name_to_address.remove(name);
+            }
+            let mut active_chat = self.active_chat.write();
+            if active_chat.is_some() && active_chat.as_ref().unwrap().1 == *address {
+                *active_chat = None;
             }
             return Some(connection);
         }

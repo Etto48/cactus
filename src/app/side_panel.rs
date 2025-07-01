@@ -8,7 +8,7 @@ use crate::{app::log::Log, connection::{chats::Chats, connection_manager::Connec
 pub fn side_panel_contents(
     connection_manager: SyncSignal<ConnectionManager>, 
     log: SyncSignal<Log>, 
-    active_chat: Signal<Option<(String, SocketAddr)>>,
+    active_chat: SyncSignal<Option<(String, SocketAddr)>>,
     chats: SyncSignal<Chats>,
 ) -> Element {
     static X_SVG: Asset = asset!("/assets/x.svg");
