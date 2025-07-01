@@ -43,8 +43,46 @@ impl ChatMessage {
 }
 
 #[derive(Debug, Clone)]
+pub struct ChatVector {
+    pub messages: Vec<ChatMessage>,
+    pub notification: bool,
+}
+
+impl Default for ChatVector {
+    fn default() -> Self {
+        ChatVector {
+            messages: Vec::new(),
+            notification: false,
+        }
+    }
+}
+
+impl ChatVector {
+    pub fn push(&mut self, message: ChatMessage) {
+        self.messages.push(message);
+        self.notification = true;
+    }
+
+    pub fn last(&self) -> Option<&ChatMessage> {
+        self.messages.last()
+    }
+
+    pub fn len(&self) -> usize {
+        self.messages.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.messages.is_empty()
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &ChatMessage> {
+        self.messages.iter()
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct Chats {
-    pub chats: HashMap<SocketAddr, Vec<ChatMessage>>
+    pub chats: HashMap<SocketAddr, ChatVector>
 }
 
 impl Default for Chats {
@@ -58,7 +96,7 @@ impl Default for Chats {
 impl Chats {
     pub fn add_message(&mut self, address: SocketAddr, direction: MessageDirection, content: String) {
         if !self.chats.contains_key(&address) {
-            self.chats.insert(address, Vec::new());
+            self.chats.insert(address, ChatVector::default());
         }
         if let Some(messages) = self.chats.get_mut(&address) {
             messages.push(ChatMessage {
@@ -73,7 +111,21 @@ impl Chats {
         self.chats.remove(address);
     }
 
-    pub fn get_messages(&self, address: &SocketAddr) -> Option<&Vec<ChatMessage>> {
+    pub fn get_messages(&self, address: &SocketAddr) -> Option<&ChatVector> {
         self.chats.get(address)
+    }
+
+    pub fn get_messages_mut(&mut self, address: &SocketAddr) -> Option<&mut ChatVector> {
+        self.chats.get_mut(address)
+    }
+
+    pub fn get_last_message(&self, address: &SocketAddr) -> Option<&ChatMessage> {
+        self.chats.get(address).and_then(|messages| messages.last())
+    }
+
+    pub fn reset_notification(&mut self, address: &SocketAddr) {
+        if let Some(messages) = self.chats.get_mut(address) {
+            messages.notification = false;
+        }
     }
 }

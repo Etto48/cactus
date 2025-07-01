@@ -7,7 +7,7 @@ use crate::{app::{chat::chat_to_component, log::{log_to_component, Log}, setting
 
 pub fn app() -> Element {
     dioxus::desktop::window().set_title("🌵Cactus");
-    dioxus::desktop::window().set_min_inner_size(Some(LogicalSize::new(600.0, 400.0)));
+    dioxus::desktop::window().set_min_inner_size(Some(LogicalSize::new(700.0, 400.0)));
     static CSS: Asset = asset!("/assets/style.css");
     static ENTER_SVG: Asset = asset!("/assets/arrow-return-left.svg");
     static GEAR_SVG: Asset = asset!("/assets/gear-fill.svg");
@@ -16,7 +16,7 @@ pub fn app() -> Element {
         log.log_i("Cactus started");
         log
     });
-    let chats = use_signal_sync(|| {
+    let mut chats = use_signal_sync(|| {
         Chats::default()
     });
     let mut show_settings = use_signal(|| {
@@ -71,6 +71,13 @@ pub fn app() -> Element {
             }
         }
     });
+    use_effect(move || {
+        if let Some((_, address)) = active_chat() {
+            chats.write().reset_notification(&address);    
+        } else {
+            log.write().reset_notification();
+        }
+    });
     rsx!{
         document::Stylesheet{ href: CSS }
         div {
@@ -82,7 +89,7 @@ pub fn app() -> Element {
                 class: "side-panel",
                 div {
                     class: "side-panel-wrapper",
-                    side_panel_contents { connection_manager, log, active_chat }
+                    side_panel_contents { connection_manager, log, active_chat, chats }
                 }
                 div {
                     class: "side-panel-footer",

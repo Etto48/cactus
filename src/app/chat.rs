@@ -27,7 +27,23 @@ pub fn chat_to_component(
             for (i, message) in messages.iter().enumerate() {
                 div {
                     class: "chat-message ".to_owned() + message.direction.to_str(),
-                    chat_message_component { message_refs, message: message.clone(), name: name.clone(), i }
+                    div {
+                        class: "chat-message-wrapper",
+                        onmounted: move |e| {
+                            message_refs.write().insert(i, e);
+                            chats.write().reset_notification(&address);
+                        },
+                        if message.direction.is_received() {
+                            span {
+                                class: "chat-message-source",
+                                "{name}"
+                            }
+                        }
+                        span {
+                            class: "chat-message-content",
+                            "{message.content}"    
+                        }
+                    }
                     span {
                         class: "chat-message-timestamp",
                         "{message.fmt_timestamp()}"
@@ -46,21 +62,6 @@ fn chat_message_component(
     i: ReadOnlySignal<usize>
 ) -> Element {
     rsx! {
-        div {
-            class: "chat-message-wrapper",
-            onmounted: move |e| {
-                message_refs.write().insert(i(), e);
-            },
-            if message().direction.is_received() {
-                span {
-                    class: "chat-message-source",
-                    "{name}"
-                }
-            }
-            span {
-                class: "chat-message-content",
-                "{message().content}"    
-            }
-        }
+        
     }
 }

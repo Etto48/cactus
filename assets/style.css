@@ -101,7 +101,7 @@ body {
 }
 
 .side-panel-wrapper {
-    min-width: 250px;
+    min-width: 350px;
     height: 100%;
     display: flex;
     flex-direction: column;
@@ -312,8 +312,52 @@ body {
 }
 
 .side-panel-item .connection-address {
-    font-size: 14px;
+    font-size: 12px;
     color: var(--text-color-dim);
+}
+
+.side-panel-item .message-preview-wrapper {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.side-panel-item .message-preview {
+    font-size: 14px;
+    color: var(--text-color);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 260px;
+}
+
+.side-panel-item .message-preview.empty {
+    opacity: 0;
+}
+
+.side-panel-item .notification-dot {
+    width: 10px;
+    height: 10px;
+    background-color: var(--accent-color);
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+.side-panel-item .notification-dot.debug {
+    background-color: var(--debug-color);
+}
+.side-panel-item .notification-dot.info {
+    background-color: var(--info-color);
+}
+.side-panel-item .notification-dot.warning {
+    background-color: var(--warning-color);
+}
+.side-panel-item .notification-dot.error {
+    background-color: var(--error-color);
+}
+
+.side-panel-item .notification-dot + .message-preview {
+    color: var(--text-color-bright);
 }
 
 .chat-message {
@@ -323,6 +367,7 @@ body {
     padding: 10px;
     margin: 5px 0;
     width: fit-content;
+    max-width: calc(max(66%,350px));
 }
 
 .chat-message:last-child {
@@ -448,4 +493,43 @@ body {
     background-color: var(--component-color);
     color: var(--text-color-bright);
     margin-bottom: 20px;
+}
+
+.settings select {
+    width: 100%;
+    border-radius: 10px;
+    padding: 10px;
+    box-sizing: border-box;
+    border: none;
+    background-color: var(--component-color);
+    color: var(--text-color-bright);
+    appearance: none;
+}
+
+.settings .select-wrapper::after {
+    content: "▼";
+    position: absolute;
+    font-size: 16px;
+    transform: translateY(calc(18px - 50%)) translateX(-25px);
+}
+
+.settings .select-wrapper:has(select:active)::after {
+    content: "▲";
+}
+
+.settings select:focus {
+    outline: solid 2px var(--accent-color);
+    background-color: var(--component-color);
+}
+
+.settings select:active {
+    background-color: var(--component-color-active);
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.settings select option {
+    background-color: var(--component-color);
+    color: var(--text-color-bright);
+    border-radius: 5px;
 }
