@@ -85,7 +85,11 @@ impl Connection {
                                 match msg {
                                     Message::Hello(n) => {
                                         if !n.is_empty() {
-                                            connection_map.write().rename_connection(address, n.clone());
+                                            while !connection_map.write().rename_connection(address, n.clone()) {
+                                                // Wait until the connection is in the connection map
+                                                thread::sleep(Duration::from_millis(100));
+                                            }
+                                            
                                             log.write().log_d(format!("{} is now called {}", 
                                                 address, 
                                                 n));

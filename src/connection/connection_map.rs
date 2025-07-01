@@ -50,7 +50,7 @@ impl ConnectionMap {
         }
     }
 
-    pub fn rename_connection(&mut self, address: SocketAddr, mut new_name: String) {
+    pub fn rename_connection(&mut self, address: SocketAddr, mut new_name: String) -> bool {
         if let Some(connection) = self.connections.get_mut(&address) {
             let mut name_lock = connection.name.lock().unwrap();
             if let Some(old_name) = name_lock.clone() {
@@ -66,6 +66,9 @@ impl ConnectionMap {
             // Update the connection's name and the mapping
             *name_lock = Some(new_name.clone());
             self.name_to_address.insert(new_name, address);
+            true
+        } else {
+            false
         }
     }
 
