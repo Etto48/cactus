@@ -1,0 +1,7 @@
+[application]
+asset_dir = "assets"
+
+[bundle]
+identifier = "com.github.etto48"
+publisher = "Ettore Ricci"
+icon = ["assets/icon.png"]
