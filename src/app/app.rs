@@ -1,16 +1,21 @@
 use std::{collections::HashMap, net::SocketAddr};
 
-use dioxus::desktop::LogicalSize;
+use dioxus::desktop::{tao::window::Icon, LogicalSize};
 pub use dioxus::prelude::*;
 
 use crate::{app::{chat::chat_to_component, log::{log_to_component, Log}, settings::settings_component, side_panel::side_panel_contents}, commands::commands::parse_command, connection::{chats::Chats, connection_manager::ConnectionManager, connection_map::ConnectionMap, message::Message}};
 
 pub fn app() -> Element {
-    dioxus::desktop::window().set_title("🌵Cactus");
+    static TITLE: &'static str = "🌵Cactus";
+    dioxus::desktop::window().set_title(TITLE);
     dioxus::desktop::window().set_min_inner_size(Some(LogicalSize::new(700.0, 400.0)));
+    let icon_rgba = include_bytes!("../../assets/icon.rgba");
+    dioxus::desktop::window().set_window_icon(Some(Icon::from_rgba(icon_rgba.to_vec(), 32, 32).expect("Failed to create window icon")));
+
     static CSS: Asset = asset!("/assets/style.css");
     static ENTER_SVG: Asset = asset!("/assets/arrow-return-left.svg");
     static GEAR_SVG: Asset = asset!("/assets/gear-fill.svg");
+    static ICON_SVG: Asset = asset!("/assets/icon.svg");
     let mut log = use_signal_sync(|| {
         let mut log = Log::default();
         log.log_i("Cactus started");
@@ -79,6 +84,8 @@ pub fn app() -> Element {
         }
     });
     rsx!{
+        document::Link { rel: "icon", href: ICON_SVG, type: "image/svg+xml" }
+        document::Title { "{TITLE}" }
         document::Stylesheet{ href: CSS }
         div {
             class: "container",
