@@ -89,6 +89,9 @@ pub fn app() -> Element {
         document::Stylesheet{ href: CSS }
         div {
             class: "container",
+            oncontextmenu: move |e| {
+                e.prevent_default();
+            },
             if show_settings() {
                 settings_component { username, log, show_settings }
             }
