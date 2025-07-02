@@ -3,7 +3,7 @@ use std::{collections::HashMap, net::SocketAddr};
 use dioxus::desktop::{tao::window::Icon, LogicalSize};
 pub use dioxus::prelude::*;
 
-use crate::{app::{chat::chat_to_component, log::{log_to_component, Log}, settings::settings_component, side_panel::side_panel_contents}, commands::commands::parse_command, connection::{chats::Chats, connection_manager::ConnectionManager, connection_map::ConnectionMap, message::Message}};
+use crate::{app::{chat::chat_to_component, context_menu::{context_menu_component, ContextMenu}, log::{log_to_component, Log}, settings::settings_component, side_panel::side_panel_contents}, commands::commands::parse_command, connection::{chats::Chats, connection_manager::ConnectionManager, connection_map::ConnectionMap, message::Message}};
 
 pub fn app() -> Element {
     static TITLE: &'static str = "🌵Cactus";
@@ -13,7 +13,8 @@ pub fn app() -> Element {
     dioxus::desktop::window().set_window_icon(Some(Icon::from_rgba(icon_rgba.to_vec(), 32, 32).expect("Failed to create window icon")));
 
     static CSS: Asset = asset!("/assets/style.css");
-    static ENTER_SVG: Asset = asset!("/assets/arrow-return-left.svg");
+    static RUN_SVG: Asset = asset!("/assets/bolt-solid.svg");
+    static SEND_SVG: Asset = asset!("/assets/paper-plane-solid.svg");
     static GEAR_SVG: Asset = asset!("/assets/gear-fill.svg");
     static ICON_SVG: Asset = asset!("/assets/icon.svg");
     let mut log = use_signal_sync(|| {
@@ -38,6 +39,9 @@ pub fn app() -> Element {
     });
     let connection_manager = use_signal_sync(|| {
         ConnectionManager::new(log, connection_map, chats, username)
+    });
+    let context_menu = use_signal(|| {
+        ContextMenu::None
     });
     let mut input_string = use_signal_sync(|| String::new());
     let last_log_message = use_signal(|| None::<Event<MountedData>>);
@@ -95,11 +99,12 @@ pub fn app() -> Element {
             if show_settings() {
                 settings_component { username, log, show_settings }
             }
+            context_menu_component { context_menu, connection_manager, log }
             div {
                 class: "side-panel",
                 div {
                     class: "side-panel-wrapper",
-                    side_panel_contents { connection_manager, log, active_chat, chats }
+                    side_panel_contents { connection_manager, log, active_chat, chats, context_menu }
                 }
                 div {
                     class: "side-panel-footer",
@@ -172,9 +177,18 @@ pub fn app() -> Element {
                             onclick: move |_| {
                                 enter_handler();
                             },
-                            img {
-                                src: ENTER_SVG,
-                                alt: "Enter",
+                            if active_chat().is_none() {
+                                img {
+                                    class: "enter-icon run",
+                                    src: RUN_SVG,
+                                    alt: "Run",
+                                }
+                            } else {
+                                img {
+                                    class: "enter-icon send",
+                                    src: SEND_SVG,
+                                    alt: "Send",
+                                }
                             }
                         }
                     }

@@ -151,6 +151,10 @@ impl Log {
     pub fn reset_notification(&mut self) {
         self.notification = None;
     }
+    pub fn clear(&mut self) {
+        self.entries.clear();
+        self.notification = None;
+    }
 }
 
 

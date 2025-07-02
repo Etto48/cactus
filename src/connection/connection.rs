@@ -94,9 +94,9 @@ impl Connection {
                 let mut send_buffer = [0u8; 65536]; // 64KB buffer for sending;
                 if handshake.is_handshake_finished() {
                     let mut transport_state = transport_state.lock().unwrap();
-                    
-                    *transport_state = Some(
-                        std::mem::take(&mut handshake_state).unwrap().into_transport_mode().expect("Failed to switch to transport mode"));
+                    let new_transport = handshake_state.take().unwrap().into_transport_mode()
+                        .expect("Failed to switch to transport mode");
+                    *transport_state = Some(new_transport);
                     continue;
                 }
                 if handshake.is_my_turn() {
@@ -117,6 +117,7 @@ impl Connection {
                             if n > 0 {
                                 if let Err(e) = handshake.read_message(&receive_buffer[..n], &mut payload_buffer) {
                                     log.write().log_e(format!("Error reading handshake message from {}: {:?}", address, e));
+                                    break;
                                 }
                             }
                         },
@@ -223,8 +224,11 @@ impl Connection {
                     .expect("Failed to write message");
                 self.socket.write_all(&send_buffer[..len])?;
                 break;
+            } else if !self.running.load(std::sync::atomic::Ordering::SeqCst) {
+                return Err(std::io::Error::new(std::io::ErrorKind::NotConnected, "Connection was closed"));
             } else {
                 drop(transport_lock); // Drop the lock to avoid deadlock
+                println!("Waiting for handshake to finish for {}", self.address);
                 thread::sleep(Duration::from_millis(50)); // Wait for handshake to finish
                 continue;
             }

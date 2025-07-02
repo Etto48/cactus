@@ -14,7 +14,7 @@
     --component-color-active: #606060;
     --relative-hover: #ffffff30;
     --relative-active: #ffffff50;
-    --panel-shadow: rgba(0, 0, 0, 0.2);
+    --panel-shadow: rgba(0, 0, 0, 0.3);
     --debug-color: #7ac972;
     --info-color: #5ec4ff;
     --warning-color: #ffd666;
@@ -50,15 +50,17 @@ body {
 }
 
 .side-panel-footer {
-    height: 70px;
+    height: 75px;
     background-color: var(--component-color);
     border-radius: 10px;
     margin: 0 5px 5px 5px;
-    padding: 5px 15px;
+    padding: 5px 20px;
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: flex-end;
+    box-shadow: 0 0 15px var(--panel-shadow);
+    z-index: 2;
 }
 
 .side-panel-footer-wrapper {
@@ -177,6 +179,10 @@ body {
     outline: none;
 }
 
+.input-wrapper:has(.input-field:focus) {
+    outline: solid 2px var(--accent-color);
+}
+
 .input-button {
     width: 45px;
     height: 45px;
@@ -196,6 +202,16 @@ body {
 
 .input-button:active {
     background-color: var(--accent-color-active);
+}
+
+.input-button img {
+    width: 20px;
+    height: 20px;
+}
+
+.input-button img.send {
+    position: relative;
+    right: 0.08em;
 }
 
 .log-entry {
@@ -328,7 +344,7 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    max-width: 260px;
+    max-width: 270px;
 }
 
 .side-panel-item .message-preview.empty {
@@ -532,4 +548,53 @@ body {
     background-color: var(--component-color);
     color: var(--text-color-bright);
     border-radius: 5px;
+}
+
+.context-menu-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1000;
+}
+
+.context-menu {
+    position: absolute;
+    background-color: var(--panel-background-color-dim);
+    border-radius: 12px;
+    box-shadow: 0 0 15px var(--panel-shadow);
+    padding: 8px;
+    z-index: 1001;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.context-menu button {
+    background-color: inherit;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    border: none;
+    color: var(--text-color);
+    font-size: 16px;
+    border-radius: 8px;
+    padding: 10px 10px;
+}
+
+.context-menu button:hover {
+    background-color: var(--relative-hover);
+}
+
+.context-menu button:active {
+    background-color: var(--relative-active);
+}
+
+.context-menu .context-menu-icon {
+    width: 20px;
+    height: 20px;
+    margin-right: 10px;
+    filter: brightness(0) saturate(100%) invert(84%) sepia(1%) saturate(0%) hue-rotate(78deg) brightness(98%) contrast(97%);;
 }

@@ -1,6 +1,6 @@
 use std::{net::{Ipv6Addr, SocketAddr, SocketAddrV6, TcpListener, TcpStream}, sync::{atomic::AtomicBool, Arc}, thread::{self, JoinHandle}};
 
-use dioxus::signals::{SyncSignal, Writable};
+use dioxus::signals::{Readable, SyncSignal, Writable};
 use snow::{Builder, Keypair};
 
 use crate::{app::log::Log, connection::{chats::Chats, connection_map::ConnectionMap}};
@@ -133,6 +133,10 @@ impl ConnectionManager {
     }
 
     pub fn connect(&mut self, address: SocketAddr) -> std::io::Result<()>{
+        if self.connections.read().get_by_address(&address).is_some() {
+            self.log.write().log_w(format!("Already connected to {}", address));
+            return Ok(());
+        }
         let socket = TcpStream::connect(address)?;
         self.log.write().log_i(format!("Connected to {}", address));
         let connection = crate::connection::connection::Connection::new(

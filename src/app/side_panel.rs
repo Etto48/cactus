@@ -2,7 +2,7 @@ use std::net::SocketAddr;
 
 use dioxus::prelude::*;
 
-use crate::{app::log::Log, connection::{chats::Chats, connection_manager::ConnectionManager}};
+use crate::{app::{context_menu::{ContextMenu, ContextMenuContent, ContextMenuInfo}, log::Log}, connection::{chats::Chats, connection_manager::ConnectionManager}};
 
 #[component]
 pub fn side_panel_contents(
@@ -10,8 +10,8 @@ pub fn side_panel_contents(
     log: SyncSignal<Log>, 
     active_chat: SyncSignal<Option<(String, SocketAddr)>>,
     chats: SyncSignal<Chats>,
+    context_menu: Signal<ContextMenu>,
 ) -> Element {
-    static X_SVG: Asset = asset!("/assets/x.svg");
     let mut connections_copy = Vec::new();
     if let Ok(connection_manager) = connection_manager.try_read() {
         if let Ok(connections) = connection_manager.connections.try_read() {
@@ -27,6 +27,11 @@ pub fn side_panel_contents(
             class: "side-panel-item system ".to_owned() + if active_chat().is_none() {"active"} else { "" },
             onclick: move |_| {
                 active_chat.set(None);
+            },
+            oncontextmenu: move |e| {
+                context_menu.set(Some(ContextMenuInfo::new(
+                    ContextMenuContent::System, &e
+                )))
             },
             div {
                 class: "side-panel-item-wrapper",
@@ -64,6 +69,13 @@ pub fn side_panel_contents(
                 class: "side-panel-item ".to_owned() + if let Some((_, addr)) = active_chat() { if addr == connection.1 { "active" } else { "" } } else { "" },
                 onclick: move |_| {
                     active_chat.set(Some((connection.0.clone(), connection.1.clone())));
+                },
+                oncontextmenu: move |e| {
+                    context_menu.set(Some(ContextMenuInfo::new(
+                        ContextMenuContent::Connection {
+                            address: connection.1.clone(),
+                        }, &e
+                    )))
                 },
                 div {
                     class: "side-panel-item-wrapper",
@@ -105,17 +117,6 @@ pub fn side_panel_contents(
                                 "No messages"
                             }
                         }
-                    }
-                }
-                button {
-                    class: "disconnect-button",
-                    onclick: move |e| {
-                        e.stop_propagation();
-                        connection_manager.write().connections.write().remove_by_address(&connection.1);
-                    },
-                    img {
-                        src: X_SVG,
-                        alt: "Disconnect",
                     }
                 }
             }
