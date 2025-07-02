@@ -8,8 +8,7 @@ bitcode = { version = "0.6.6", features = ["serde"] }
 chrono = "0.4.41"
 dioxus = { version = "0.6.3", features = ["desktop"] }
 serde = { version = "1.0.219", features = ["derive"] }
-
-[profile]
+snow = "0.9.6"
 
 [profile.wasm-dev]
 inherits = "dev"

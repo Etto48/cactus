@@ -1,6 +1,6 @@
 # 🌵Cactus
 
-Cactus is a P2P chat application.
+Cactus is a P2P encrypted chat application. It uses the [Noise Protocol](https://noiseprotocol.org/) for secure communication.
 
 ## Building from source
 

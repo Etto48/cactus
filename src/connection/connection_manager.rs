@@ -1,8 +1,41 @@
 use std::{net::{Ipv6Addr, SocketAddr, SocketAddrV6, TcpListener, TcpStream}, sync::{atomic::AtomicBool, Arc}, thread::{self, JoinHandle}};
 
 use dioxus::signals::{SyncSignal, Writable};
+use snow::{Builder, Keypair};
 
 use crate::{app::log::Log, connection::{chats::Chats, connection_map::ConnectionMap}};
+
+pub struct EncryptionInfo {
+    pub static_keypair: Keypair,
+    pub args: String,
+}
+
+impl Clone for EncryptionInfo {
+    fn clone(&self) -> Self {
+        EncryptionInfo {
+            static_keypair: Keypair { 
+                private: self.static_keypair.private.clone(), 
+                public: self.static_keypair.public.clone() 
+            },
+            args: self.args.clone(),
+        }
+    }
+}
+
+impl EncryptionInfo {
+    pub fn new(args: impl Into<String>) -> Self {
+        let args = args.into();
+        let builder = Builder::new(args.parse().expect("Failed to parse noise protocol arguments"));
+        let static_keypair = builder.generate_keypair().expect("Failed to generate keypair");
+
+        EncryptionInfo { static_keypair, args }
+    }
+
+    pub fn get_builder(&self) -> Builder {
+        Builder::new(self.args.parse().expect("Failed to parse noise protocol arguments"))
+            .local_private_key(&self.static_keypair.private)
+    }
+}
 
 pub struct ConnectionManager {
     pub connections: SyncSignal<ConnectionMap>,
@@ -10,6 +43,7 @@ pub struct ConnectionManager {
     log: SyncSignal<Log>,
     chats: SyncSignal<Chats>,
     running: Arc<AtomicBool>,
+    encryption_info: Arc<EncryptionInfo>,
     thread: Option<JoinHandle<()>>,
 }
 
@@ -26,13 +60,19 @@ impl ConnectionManager {
             SocketAddr::V6(SocketAddrV6::new(Ipv6Addr::UNSPECIFIED, 4848, 0, 0)))
             .expect("Failed to bind TCP listener");
         listener.set_nonblocking(true).expect("Failed to set listener to non-blocking");
+
+        let noise_args = "Noise_XX_25519_ChaChaPoly_BLAKE2b";
+        let encryption_info = EncryptionInfo::new(noise_args);
+        let encryption_info = Arc::new(encryption_info);
+
         let thread = Some(std::thread::spawn({
             let running = running.clone();
             let connections = connections.clone();
             let log = log.clone();
             let chats = chats.clone();
             let username = username.clone();
-            move || Self::run(running, listener, log, connections, chats, username)
+            let encryption_info = encryption_info.clone();
+            move || Self::run(running, listener, log, connections, chats, username, encryption_info)
         }));
         ConnectionManager {
             connections,
@@ -40,6 +80,7 @@ impl ConnectionManager {
             log,
             chats,
             running,
+            encryption_info,
             thread,
         }
     }
@@ -50,6 +91,7 @@ impl ConnectionManager {
         mut connections: SyncSignal<ConnectionMap>, 
         chats: SyncSignal<Chats>,
         username: SyncSignal<String>,
+        encryption_info: Arc<EncryptionInfo>,
     ) {
         while running.load(std::sync::atomic::Ordering::SeqCst) {
             match listener.accept() {
@@ -62,6 +104,8 @@ impl ConnectionManager {
                         connections.clone(),
                         chats.clone(),
                         username.clone(),
+                        encryption_info.clone(),
+                        false,
                     );
                     connections.write().add(connection);
                 },
@@ -98,6 +142,8 @@ impl ConnectionManager {
             self.connections.clone(),
             self.chats.clone(),
             self.username.clone(),
+            self.encryption_info.clone(),
+            true,
         );
         self.connections.write().add(connection);
         Ok(())
